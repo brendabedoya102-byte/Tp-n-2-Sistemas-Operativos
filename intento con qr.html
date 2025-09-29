@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Gestión de Memoria</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #151520;
+            --bg-tertiary: #1e1e2e;
+            --accent-primary: #5d5dff;
+            --accent-secondary: #7a7aff;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0b0;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --border: #2a2a3a;
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #121218 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow: hidden;
+            height: 100vh;
+            padding: 16px;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            height: 100%;
+            max-height: 100vh;
+        }
+        
+        header {
+            grid-column: 1 / -1;
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 4px 10px rgba(93, 93, 255, 0.3);
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: linear-gradient(90deg, var(--text-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card-header {
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-content {
+            padding: 20px;
+            flex: 1;
+            overflow: auto;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(93, 93, 255, 0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(93, 93, 255, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #27ae60);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger), #c0392b);
+        }
+        
+        select, input {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 10px;
+            outline: none;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        select:focus, input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(93, 93, 255, 0.2);
+        }
+        
+        .memory-viz {
+            height: 140px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            position: relative;
+            margin: 16px 0;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        
+        .memory-block {
+            position: absolute;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+            font-size: 12px;
+            transition: all 0.3s;
+            border-right: 1px solid var(--bg-secondary);
+        }
+        
+        .memory-free {
+            background: var(--bg-tertiary);
+        }
+        
+        .process-queues {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin: 16px 0;
+        }
+        
+        .queue {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 140px;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+        
+        .queue:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .queue-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .process {
+            background: var(--accent-primary);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 6px 0;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            transition: all 0.3s;
+        }
+        
+        .process:hover {
+            transform: translateX(5px);
+        }
+        
+        .process-new {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+        }
+        
+        .process-ready {
+            background: linear-gradient(135deg, var(--success), #27ae60);
+        }
+        
+        .process-running {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        }
+        
+        .process-terminated {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 16px 0;
+        }
+        
+        .metric {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+        
+        .metric:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 8px;
+            background: linear-gradient(90deg, var(--text-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .log {
+            height: 200px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding-left: 10px;
+            border-left: 3px solid var(--accent-primary);
+            transition: all 0.3s;
+        }
+        
+        .log-entry:hover {
+            background: rgba(93, 93, 255, 0.05);
+        }
+        
+        .log-warning {
+            border-left-color: var(--warning);
+        }
+        
+        .log-error {
+            border-left-color: var(--danger);
+        }
+        
+        .log-success {
+            border-left-color: var(--success);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: rgba(93, 93, 255, 0.05);
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .config-label {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+        
+        .tab-container {
+            margin-top: 16px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background: rgba(93, 93, 255, 0.1);
+        }
+        
+        .tab.active {
+            border-bottom-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-running {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+        
+        .status-paused {
+            background: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+        }
+        
+        .status-stopped {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 30px;
+            font-style: italic;
+        }
+        
+        .process-info {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        
+        /* Modal QR */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            width: 90%;
+            max-width: 400px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, var(--text-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .modal-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        .qr-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 250px;
+        }
+        
+        #qrCode {
+            width: 200px;
+            height: 200px;
+        }
+        
+        .qr-placeholder {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .modal-footer {
+            margin-top: 20px;
+        }
+        
+        .btn-qr {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .btn-qr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(93, 93, 255, 0.3);
+        }
+        
+        .mobile-info {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 16px;
+            border-left: 4px solid var(--accent-primary);
+        }
+        
+        .mobile-info h4 {
+            margin-bottom: 8px;
+            color: var(--accent-primary);
+        }
+        
+        .mobile-info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .mobile-info li {
+            margin: 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mobile-info li::before {
+            content: "•";
+            color: var(--accent-primary);
+            font-weight: bold;
+        }
+        
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">M</div>
+                <h1>Simulador de Gestión de Memoria</h1>
+            </div>
+            <div class="controls">
+                <button id="btnQR">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <path d="M10 3v7"></path>
+                        <path d="M3 10h7"></path>
+                        <path d="M14 10h7"></path>
+                        <path d="M10 14v7"></path>
+                        <path d="M10 10h4v4h-4z"></path>
+                    </svg>
+                    Código QR
+                </button>
+                <button id="btnConfig">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+                    </svg>
+                    Configuración
+                </button>
+            </div>
+        </header>
+        
+        <div class="card">
+            <div class="card-header">
+                <span>Estado del Sistema</span>
+                <span id="systemStatus">
+                    <span class="status-indicator status-stopped"></span>
+                    Detenido
+                </span>
+            </div>
+            <div class="card-content">
+                <div class="config-grid">
+                    <div class="config-item">
+                        <span class="config-label">Memoria Total (MB)</span>
+                        <input type="number" id="totalMemory" value="100" min="50" max="500">
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">Algoritmo</span>
+                        <select id="algorithm">
+                            <option value="first-fit">First-Fit</option>
+                            <option value="best-fit">Best-Fit</option>
+                            <option value="worst-fit">Worst-Fit</option>
+                        </select>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">Modo Memoria</span>
+                        <select id="memoryMode">
+                            <option value="paging">Paginación</option>
+                            <option value="compaction">Compactación</option>
+                        </select>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">Tamaño Página (MB)</span>
+                        <input type="number" id="pageSize" value="10" min="1" max="20">
+                    </div>
+                </div>
+                
+                <div class="controls" style="margin-top: 20px;">
+                    <button id="btnApplyConfig">Aplicar Configuración</button>
+                    <button id="btnAddProcess">Agregar Proceso</button>
+                    <button id="btnStart" class="btn-success">Iniciar Simulación</button>
+                    <button id="btnPause" class="btn-warning" disabled>Pausar</button>
+                    <button id="btnReset" class="btn-danger">Reiniciar</button>
+                    <button id="btnStressTest">Prueba de Estrés</button>
+                </div>
+                
+                <div class="memory-viz" id="memoryVisualization">
+                    <div class="empty-state">Memoria no inicializada</div>
+                </div>
+                
+                <div class="metrics">
+                    <div class="metric">
+                        <div>Uso de Memoria</div>
+                        <div class="metric-value" id="metricMemoryUsage">0%</div>
+                    </div>
+                    <div class="metric">
+                        <div>Fragmentación</div>
+                        <div class="metric-value" id="metricFragmentation">0%</div>
+                    </div>
+                    <div class="metric">
+                        <div>Procesos Activos</div>
+                        <div class="metric-value" id="metricActiveProcesses">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span>Colas de Procesos y Métricas</span>
+            </div>
+            <div class="card-content">
+                <div class="process-queues">
+                    <div class="queue">
+                        <div class="queue-title">
+                            <span class="status-indicator" style="background: var(--warning);"></span>
+                            Nuevos
+                        </div>
+                        <div id="queueNew"></div>
+                    </div>
+                    <div class="queue">
+                        <div class="queue-title">
+                            <span class="status-indicator" style="background: var(--success);"></span>
+                            Listos
+                        </div>
+                        <div id="queueReady"></div>
+                    </div>
+                    <div class="queue">
+                        <div class="queue-title">
+                            <span class="status-indicator" style="background: var(--accent-primary);"></span>
+                            Ejecutando
+                        </div>
+                        <div id="queueRunning"></div>
+                    </div>
+                    <div class="queue">
+                        <div class="queue-title">
+                            <span class="status-indicator" style="background: var(--bg-tertiary);"></span>
+                            Terminados
+                        </div>
+                        <div id="queueTerminated"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-container">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="events">Eventos</div>
+                        <div class="tab" data-tab="pages">Tabla de Páginas</div>
+                        <div class="tab" data-tab="metrics">Métricas Detalladas</div>
+                    </div>
+                    
+                    <div class="tab-content active" id="tabEvents">
+                        <div class="log" id="eventLog"></div>
+                    </div>
+                    
+                    <div class="tab-content" id="tabPages">
+                        <table id="pageTable">
+                            <thead>
+                                <tr>
+                                    <th>PID</th>
+                                    <th>Página</th>
+                                    <th>Marco</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4" class="empty-state">No hay páginas asignadas</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="tab-content" id="tabMetrics">
+                        <div class="metrics">
+                            <div class="metric">
+                                <div>Tiempo Espera Promedio</div>
+                                <div class="metric-value" id="detailAvgWait">0 ms</div>
+                            </div>
+                            <div class="metric">
+                                <div>Fragmentación Externa</div>
+                                <div class="metric-value" id="detailExtFrag">0%</div>
+                            </div>
+                            <div class="metric">
+                                <div>Fragmentación Interna</div>
+                                <div class="metric-value" id="detailIntFrag">0%</div>
+                            </div>
+                            <div class="metric">
+                                <div>Procesos Completados</div>
+                                <div class="metric-value" id="detailCompleted">0</div>
+                            </div>
+                            <div class="metric">
+                                <div>Procesos Bloqueados</div>
+                                <div class="metric-value" id="detailBlocked">0</div>
+                            </div>
+                            <div class="metric">
+                                <div>Eficiencia Memoria</div>
+                                <div class="metric-value" id="detailEfficiency">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal QR -->
+    <div class="modal-overlay" id="qrModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Acceso Móvil</div>
+                <div class="modal-subtitle">Escanea el código QR para acceder al simulador desde tu celular</div>
+            </div>
+            
+            <div class="qr-container">
+                <canvas id="qrCode"></canvas>
+                <div id="qrPlaceholder" class="qr-placeholder" style="display: none;">
+                    Generando código QR...
+                </div>
+            </div>
+            
+            <div class="mobile-info">
+                <h4>📱 Para usar en móviles:</h4>
+                <ul>
+                    <li>Abre la cámara de tu celular</li>
+                    <li>Enfoca el código QR</li>
+                    <li>Toca el enlace que aparece</li>
+                    <li>El simulador se abrirá en tu navegador</li>
+                </ul>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn-qr" id="closeQR">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biblioteca QR Code - Versión más reciente -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+    <script>
+        // Estado del sistema
+        const state = {
+            memory: [],
+            processes: [],
+            nextPid: 1,
+            isRunning: false,
+            interval: null,
+            metrics: {
+                totalWaitTime: 0,
+                completedProcesses: 0,
+                totalMemoryUsed: 0,
+                totalFragmentation: 0,
+                measurements: 0
+            },
+            qrGenerated: false
+        };
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSystem();
+            setupEventListeners();
+            addLog('Sistema inicializado correctamente', 'success');
+        });
+
+        function setupEventListeners() {
+            // Botones de control
+            document.getElementById('btnApplyConfig').addEventListener('click', function() {
+                initializeSystem();
+                addLog('Configuración aplicada correctamente', 'success');
+            });
+            
+            document.getElementById('btnAddProcess').addEventListener('click', addRandomProcess);
+            document.getElementById('btnStart').addEventListener('click', startSimulation);
+            document.getElementById('btnPause').addEventListener('click', pauseSimulation);
+            document.getElementById('btnReset').addEventListener('click', resetSimulation);
+            document.getElementById('btnStressTest').addEventListener('click', runStressTest);
+            document.getElementById('btnConfig').addEventListener('click', showConfigMessage);
+            
+            // Botón QR
+            document.getElementById('btnQR').addEventListener('click', openQRModal);
+            document.getElementById('closeQR').addEventListener('click', closeQRModal);
+            
+            // Cerrar modal al hacer clic fuera
+            document.getElementById('qrModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeQRModal();
+                }
+            });
+            
+            // Pestañas
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Desactivar todas las pestañas
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Activar pestaña seleccionada
+                    this.classList.add('active');
+                    document.getElementById('tab' + capitalizeFirst(tabId)).classList.add('active');
+                });
+            });
+        }
+
+        // Funciones para el QR - VERSIÓN CORREGIDA
+        function generateQRCode() {
+            const currentUrl = window.location.href;
+            const qrCanvas = document.getElementById('qrCode');
+            const placeholder = document.getElementById('qrPlaceholder');
+            
+            // Mostrar placeholder mientras se genera
+            qrCanvas.style.display = 'none';
+            placeholder.style.display = 'block';
+            
+            // Limpiar canvas primero
+            const ctx = qrCanvas.getContext('2d');
+            ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+            
+            // Configuración robusta del QR
+            const qrOptions = {
+                width: 200,
+                height: 200,
+                margin: 2,
+                colorDark: "#000000",
+                colorLight: "#FFFFFF",
+                correctLevel: QRCode.CorrectLevel.H
+            };
+            
+            try {
+                QRCode.toCanvas(qrCanvas, currentUrl, qrOptions, function(error) {
+                    if (error) {
+                        console.error('Error generando QR:', error);
+                        showQRFallback();
+                        return;
+                    }
+                    
+                    // Éxito - mostrar QR
+                    qrCanvas.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    state.qrGenerated = true;
+                    console.log('QR generado exitosamente');
+                });
+            } catch (error) {
+                console.error('Error en generación QR:', error);
+                showQRFallback();
+            }
+        }
+
+        function showQRFallback() {
+            const qrCanvas = document.getElementById('qrCode');
+            const placeholder = document.getElementById('qrPlaceholder');
+            const ctx = qrCanvas.getContext('2d');
+            
+            // Dibujar un QR de fallback manual
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, 200, 200);
+            
+            ctx.fillStyle = '#000000';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('QR No Disponible', 100, 100);
+            ctx.font = '10px Arial';
+            ctx.fillText('Usa el enlace directo:', 100, 120);
+            ctx.fillText(window.location.href, 100, 135);
+            
+            qrCanvas.style.display = 'block';
+            placeholder.style.display = 'none';
+        }
+
+        function openQRModal() {
+            document.getElementById('qrModal').classList.add('active');
+            
+            // Generar QR solo cuando se abre el modal
+            if (!state.qrGenerated) {
+                setTimeout(() => {
+                    generateQRCode();
+                }, 100);
+            }
+            
+            addLog('Código QR generado para acceso móvil', 'info');
+        }
+
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.remove('active');
+        }
+
+        function showConfigMessage() {
+            addLog('Panel de configuración avanzada - Funcionalidad en desarrollo', 'info');
+        }
+
+        function capitalizeFirst(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        function addRandomProcess() {
+            const size = Math.floor(Math.random() * 20) + 5; // 5-25 MB
+            const duration = Math.floor(Math.random() * 8) + 3; // 3-10 ciclos
+            
+            const process = {
+                id: 'P' + state.nextPid++,
+                size: size,
+                duration: duration,
+                state: 'new',
+                allocatedMemory: null,
+                waitTime: 0,
+                startTime: null,
+                endTime: null
+            };
+            
+            state.processes.push(process);
+            updateProcessQueues();
+            tryAllocateMemory();
+            addLog(`Proceso ${process.id} creado (${size}MB, ${duration} ciclos)`, 'info');
+        }
+
+        function tryAllocateMemory() {
+            const newProcesses = state.processes.filter(p => p.state === 'new');
+            
+            for (const process of newProcesses) {
+                if (allocateMemory(process)) {
+                    process.state = 'ready';
+                    addLog(`Proceso ${process.id} asignado a memoria`, 'success');
+                } else {
+                    addLog(`Memoria insuficiente para ${process.id}`, 'warning');
+                }
+            }
+            
+            updateProcessQueues();
+            updateMemoryVisualization();
+            updateMetrics();
+        }
+
+        function allocateMemory(process) {
+            const mode = document.getElementById('memoryMode').value;
+            
+            if (mode === 'paging') {
+                return allocatePaging(process);
+            } else {
+                return allocateCompaction(process);
+            }
+        }
+
+        function allocatePaging(process) {
+            const pageSize = parseInt(document.getElementById('pageSize').value);
+            const pagesNeeded = Math.ceil(process.size / pageSize);
+            const freeFrames = [];
+            
+            // Buscar marcos libres
+            for (let i = 0; i < state.memory.length; i++) {
+                if (state.memory[i].type === 'free' && state.memory[i].size >= pageSize) {
+                    const framesInBlock = Math.floor(state.memory[i].size / pageSize);
+                    for (let j = 0; j < framesInBlock; j++) {
+                        freeFrames.push({
+                            blockIndex: i,
+                            start: state.memory[i].start + j * pageSize,
+                            size: pageSize
+                        });
+                        
+                        if (freeFrames.length >= pagesNeeded) break;
+                    }
+                }
+                if (freeFrames.length >= pagesNeeded) break;
+            }
+            
+            if (freeFrames.length < pagesNeeded) return false;
+            
+            // Asignar páginas
+            process.allocatedMemory = freeFrames.slice(0, pagesNeeded);
+            
+            // Actualizar la memoria
+            for (const frame of process.allocatedMemory) {
+                const blockIndex = state.memory.findIndex(b => 
+                    b.start <= frame.start && b.start + b.size > frame.start);
+                
+                if (blockIndex === -1) continue;
+                
+                const block = state.memory[blockIndex];
+                
+                // Si el bloque es más grande que una página, dividirlo
+                if (block.size > pageSize) {
+                    // Crear nuevo bloque libre después de la página asignada
+                    state.memory.splice(blockIndex + 1, 0, {
+                        id: 'free-' + Date.now(),
+                        start: frame.start + pageSize,
+                        size: block.size - pageSize,
+                        processId: null,
+                        type: 'free'
+                    });
+                }
+                
+                // Actualizar bloque actual
+                state.memory[blockIndex] = {
+                    id: 'page-' + process.id + '-' + frame.start,
+                    start: frame.start,
+                    size: pageSize,
+                    processId: process.id,
+                    type: 'allocated'
+                };
+            }
+            
+            // Reorganizar la memoria para mantenerla ordenada
+            state.memory.sort((a, b) => a.start - b.start);
+            
+            updatePageTable();
+            return true;
+        }
+
+        function allocateCompaction(process) {
+            const algorithm = document.getElementById('algorithm').value;
+            let targetBlock = -1;
+            
+            switch (algorithm) {
+                case 'first-fit':
+                    targetBlock = state.memory.findIndex(b => b.type === 'free' && b.size >= process.size);
+                    break;
+                case 'best-fit':
+                    targetBlock = state.memory.reduce((best, block, idx) => {
+                        if (block.type === 'free' && block.size >= process.size) {
+                            if (best === -1 || block.size < state.memory[best].size) return idx;
+                        }
+                        return best;
+                    }, -1);
+                    break;
+                case 'worst-fit':
+                    targetBlock = state.memory.reduce((best, block, idx) => {
+                        if (block.type === 'free' && block.size >= process.size) {
+                            if (best === -1 || block.size > state.memory[best].size) return idx;
+                        }
+                        return best;
+                    }, -1);
+                    break;
+            }
+            
+            if (targetBlock === -1) return false;
+            
+            const block = state.memory[targetBlock];
+            process.allocatedMemory = [{
+                start: block.start,
+                size: process.size,
+                blockIndex: targetBlock
+            }];
+            
+            if (block.size > process.size) {
+                // Dividir el bloque
+                state.memory.splice(targetBlock + 1, 0, {
+                    id: 'free-' + Date.now(),
+                    start: block.start + process.size,
+                    size: block.size - process.size,
+                    processId: null,
+                    type: 'free'
+                });
+            }
+            
+            state.memory[targetBlock] = {
+                id: 'alloc-' + process.id,
+                start: block.start,
+                size: process.size,
+                processId: process.id,
+                type: 'allocated'
+            };
+            
+            return true;
+        }
+
+        function updateMemoryVisualization() {
+            const viz = document.getElementById('memoryVisualization');
+            const totalMemory = parseInt(document.getElementById('totalMemory').value);
+            
+            viz.innerHTML = '';
+            
+            if (state.memory.length === 0) {
+                viz.innerHTML = '<div class="empty-state">Memoria no inicializada</div>';
+                return;
+            }
+            
+            state.memory.forEach(block => {
+                const blockElem = document.createElement('div');
+                blockElem.className = `memory-block ${block.type === 'free' ? 'memory-free' : ''}`;
+                blockElem.style.width = `${(block.size / totalMemory) * 100}%`;
+                blockElem.style.left = `${(block.start / totalMemory) * 100}%`;
+                
+                if (block.type === 'allocated') {
+                    blockElem.style.backgroundColor = getProcessColor(block.processId);
+                    blockElem.textContent = block.processId || '?';
+                } else {
+                    blockElem.textContent = `${block.size}MB libre`;
+                }
+                
+                viz.appendChild(blockElem);
+            });
+        }
+
+        function getProcessColor(pid) {
+            const colors = [
+                '#5d5dff', '#ff6b6b', '#51cf66', '#ffd43b', 
+                '#cc5de8', '#22b8cf', '#94d82d', '#ff922b'
+            ];
+            const index = pid ? parseInt(pid.substring(1)) % colors.length : 0;
+            return colors[index];
+        }
+
+        function updateProcessQueues() {
+            updateQueue('queueNew', state.processes.filter(p => p.state === 'new'), 'new');
+            updateQueue('queueReady', state.processes.filter(p => p.state === 'ready'), 'ready');
+            updateQueue('queueRunning', state.processes.filter(p => p.state === 'running'), 'running');
+            updateQueue('queueTerminated', state.processes.filter(p => p.state === 'terminated'), 'terminated');
+        }
+
+        function updateQueue(queueId, processes, stateClass) {
+            const queue = document.getElementById(queueId);
+            queue.innerHTML = '';
+            
+            if (processes.length === 0) {
+                queue.innerHTML = '<div class="empty-state">Vacío</div>';
+                return;
+            }
+            
+            processes.forEach(process => {
+                const processElem = document.createElement('div');
+                processElem.className = `process process-${stateClass}`;
+                processElem.innerHTML = `
+                    <span>${process.id}</span>
+                    <span class="process-info">${process.size}MB</span>
+                `;
+                if (process.state === 'running') {
+                    processElem.innerHTML += `<span class="process-info">${process.duration}c</span>`;
+                }
+                queue.appendChild(processElem);
+            });
+        }
+
+        function updatePageTable() {
+            const tableBody = document.querySelector('#pageTable tbody');
+            tableBody.innerHTML = '';
+            
+            const pages = [];
+            state.processes.forEach(process => {
+                if (process.allocatedMemory) {
+                    process.allocatedMemory.forEach((mem, idx) => {
+                        pages.push({
+                            pid: process.id,
+                            page: idx,
+                            frame: `${mem.start}-${mem.start + mem.size}`,
+                            state: process.state
+                        });
+                    });
+                }
+            });
+            
+            if (pages.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="empty-state">No hay páginas asignadas</td></tr>';
+                return;
+            }
+            
+            pages.forEach(page => {
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = page.pid;
+                row.insertCell(1).textContent = page.page;
+                row.insertCell(2).textContent = page.frame;
+                row.insertCell(3).textContent = page.state;
+            });
+        }
+
+        function updateMetrics() {
+            const memoryUsage = calculateMemoryUsage();
+            const fragmentation = calculateFragmentation();
+            const activeProcesses = state.processes.filter(p => 
+                p.state === 'ready' || p.state === 'running').length;
+            
+            // Métricas principales
+            document.getElementById('metricMemoryUsage').textContent = `${memoryUsage}%`;
+            document.getElementById('metricFragmentation').textContent = `${fragmentation}%`;
+            document.getElementById('metricActiveProcesses').textContent = activeProcesses;
+            
+            // Métricas detalladas
+            const avgWait = state.metrics.completedProcesses > 0 ? 
+                Math.round(state.metrics.totalWaitTime / state.metrics.completedProcesses) : 0;
+            const extFrag = calculateExternalFragmentation();
+            const intFrag = calculateInternalFragmentation();
+            const blocked = state.processes.filter(p => p.state === 'new').length;
+            const efficiency = Math.round((memoryUsage / 100) * (1 - fragmentation / 100) * 100);
+            
+            document.getElementById('detailAvgWait').textContent = `${avgWait} ms`;
+            document.getElementById('detailExtFrag').textContent = `${extFrag}%`;
+            document.getElementById('detailIntFrag').textContent = `${intFrag}%`;
+            document.getElementById('detailCompleted').textContent = state.metrics.completedProcesses;
+            document.getElementById('detailBlocked').textContent = blocked;
+            document.getElementById('detailEfficiency').textContent = `${efficiency}%`;
+        }
+
+        function calculateMemoryUsage() {
+            const used = state.memory
+                .filter(b => b.type === 'allocated')
+                .reduce((sum, b) => sum + b.size, 0);
+            const total = parseInt(document.getElementById('totalMemory').value);
+            return Math.round((used / total) * 100);
+        }
+
+        function calculateFragmentation() {
+            const mode = document.getElementById('memoryMode').value;
+            
+            if (mode === 'paging') {
+                return calculateInternalFragmentation();
+            } else {
+                return calculateExternalFragmentation();
+            }
+        }
+
+        function calculateExternalFragmentation() {
+            const freeBlocks = state.memory.filter(b => b.type === 'free');
+            if (freeBlocks.length <= 1) return 0;
+            
+            const totalFree = freeBlocks.reduce((sum, b) => sum + b.size, 0);
+            const largestFree = Math.max(...freeBlocks.map(b => b.size));
+            
+            return Math.round(((totalFree - largestFree) / totalFree) * 100);
+        }
+
+        function calculateInternalFragmentation() {
+            const mode = document.getElementById('memoryMode').value;
+            let internalFrag = 0;
+            
+            if (mode === 'paging') {
+                const pageSize = parseInt(document.getElementById('pageSize').value);
+                state.processes
+                    .filter(p => p.allocatedMemory && p.state !== 'terminated')
+                    .forEach(p => {
+                        const pagesNeeded = Math.ceil(p.size / pageSize);
+                        internalFrag += (pagesNeeded * pageSize) - p.size;
+                    });
+            } else {
+                state.processes
+                    .filter(p => p.allocatedMemory && p.state !== 'terminated')
+                    .forEach(p => {
+                        const allocated = p.allocatedMemory.reduce((sum, m) => sum + m.size, 0);
+                        internalFrag += allocated - p.size;
+                    });
+            }
+            
+            const totalMem = parseInt(document.getElementById('totalMemory').value);
+            return Math.round((internalFrag / totalMem) * 100);
+        }
+
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('eventLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function startSimulation() {
+            if (state.isRunning) return;
+            
+            state.isRunning = true;
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnPause').disabled = false;
+            document.getElementById('systemStatus').innerHTML = 
+                '<span class="status-indicator status-running"></span>Ejecutando';
+            
+            state.interval = setInterval(simulationStep, 1000);
+            addLog('Simulación iniciada', 'success');
+        }
+
+        function pauseSimulation() {
+            if (!state.isRunning) return;
+            
+            state.isRunning = false;
+            clearInterval(state.interval);
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnPause').disabled = true;
+            document.getElementById('systemStatus').innerHTML = 
+                '<span class="status-indicator status-paused"></span>Pausado';
+            
+            addLog('Simulación pausada', 'warning');
+        }
+
+        function resetSimulation() {
+            state.isRunning = false;
+            clearInterval(state.interval);
+            
+            state.processes = [];
+            state.nextPid = 1;
+            state.metrics = {
+                totalWaitTime: 0,
+                completedProcesses: 0,
+                totalMemoryUsed: 0,
+                totalFragmentation: 0,
+                measurements: 0
+            };
+            
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnPause').disabled = true;
+            document.getElementById('systemStatus').innerHTML = 
+                '<span class="status-indicator status-stopped"></span>Detenido';
+            
+            initializeSystem();
+            updateProcessQueues();
+            updatePageTable();
+            updateMetrics();
+            document.getElementById('eventLog').innerHTML = '';
+            addLog('Simulación reiniciada', 'info');
+        }
+
+        function simulationStep() {
+            // Avanzar tiempo de espera para procesos nuevos
+            state.processes
+                .filter(p => p.state === 'new')
+                .forEach(p => p.waitTime++);
+            
+            // Ejecutar procesos
+            const runningProcesses = state.processes.filter(p => p.state === 'running');
+            
+            if (runningProcesses.length === 0) {
+                // Asignar un proceso listo para ejecutar
+                const readyProcess = state.processes.find(p => p.state === 'ready');
+                if (readyProcess) {
+                    readyProcess.state = 'running';
+                    addLog(`Proceso ${readyProcess.id} comenzó a ejecutar`, 'info');
+                }
+            } else {
+                // Avanzar ejecución de procesos en ejecución
+                runningProcesses.forEach(process => {
+                    process.duration--;
+                    
+                    if (process.duration <= 0) {
+                        process.state = 'terminated';
+                        addLog(`Proceso ${process.id} completado`, 'success');
+                        
+                        // Liberar memoria
+                        freeMemory(process);
+                        
+                        // Actualizar métricas
+                        state.metrics.completedProcesses++;
+                        state.metrics.totalWaitTime += process.waitTime;
+                        
+                        // Intentar asignar memoria a procesos nuevos
+                        tryAllocateMemory();
+                    }
+                });
+            }
+            
+            // Intentar asignar procesos nuevos a memoria
+            tryAllocateMemory();
+            
+            // Agregar proceso aleatorio ocasionalmente
+            if (Math.random() < 0.3) {
+                addRandomProcess();
+            }
+            
+            // Actualizar visualizaciones
+            updateProcessQueues();
+            updateMemoryVisualization();
+            updateMetrics();
+        }
+
+        function freeMemory(process) {
+            if (!process.allocatedMemory) return;
+            
+            process.allocatedMemory.forEach(mem => {
+                const blockIndex = state.memory.findIndex(b => 
+                    b.start === mem.start && b.size === mem.size);
+                
+                if (blockIndex !== -1) {
+                    state.memory[blockIndex] = {
+                        id: 'free-' + Date.now(),
+                        start: mem.start,
+                        size: mem.size,
+                        processId: null,
+                        type: 'free'
+                    };
+                }
+            });
+            
+            // Compactar bloques libres adyacentes
+            compactFreeBlocks();
+        }
+
+        function compactFreeBlocks() {
+            state.memory.sort((a, b) => a.start - b.start);
+            
+            for (let i = state.memory.length - 1; i > 0; i--) {
+                const current = state.memory[i];
+                const previous = state.memory[i - 1];
+                
+                if (current.type === 'free' && previous.type === 'free' &&
+                    previous.start + previous.size === current.start) {
+                    previous.size += current.size;
+                    state.memory.splice(i, 1);
+                }
+            }
+        }
+
+        function runStressTest() {
+            addLog('Iniciando prueba de estrés...', 'warning');
+            
+            for (let i = 0; i < 10; i++) {
+                addRandomProcess();
+            }
+            
+            if (!state.isRunning) {
+                startSimulation();
+            }
+        }
+
+        function initializeSystem() {
+            const totalMemory = parseInt(document.getElementById('totalMemory').value);
+            state.memory = [{
+                id: 'free-0',
+                start: 0,
+                size: totalMemory,
+                processId: null,
+                type: 'free'
+            }];
+            
+            updateMemoryVisualization();
+            updateMetrics();
+        }
+    </script>
+</body>
+</html>
