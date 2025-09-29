@@ -446,7 +446,138 @@
         }
         
         /* Modal QR */
-    
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            width: 90%;
+            max-width: 400px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--card-shadow);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, var(--text-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .modal-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        .qr-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 250px;
+        }
+        
+        #qrCode {
+            width: 200px;
+            height: 200px;
+        }
+        
+        .qr-placeholder {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .modal-footer {
+            margin-top: 20px;
+        }
+        
+        .btn-qr {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .btn-qr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(93, 93, 255, 0.3);
+        }
+        
+        .mobile-info {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 16px;
+            border-left: 4px solid var(--accent-primary);
+        }
+        
+        .mobile-info h4 {
+            margin-bottom: 8px;
+            color: var(--accent-primary);
+        }
+        
+        .mobile-info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .mobile-info li {
+            margin: 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mobile-info li::before {
+            content: "•";
+            color: var(--accent-primary);
+            font-weight: bold;
+        }
+        
         /* Scrollbar personalizado */
         ::-webkit-scrollbar {
             width: 8px;
@@ -666,24 +797,23 @@
     <div class="modal-overlay" id="qrModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">Acceso Móvil</div>
+                <div class="modal-title">📱 Acceso Móvil</div>
                 <div class="modal-subtitle">Escanea el código QR para acceder al simulador desde tu celular</div>
             </div>
             
             <div class="qr-container">
-                <canvas id="qrCode"></canvas>
-                <div id="qrPlaceholder" class="qr-placeholder" style="display: none;">
-                    Generando código QR...
-                </div>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://brendabedoya102-byte.github.io/7p-n-2-Sistemas-Operativos/" 
+                     alt="QR Code" 
+                     style="width: 200px; height: 200px;">
             </div>
             
             <div class="mobile-info">
-                <h4>📱 Para usar en móviles:</h4>
+                <h4>📋 Para usar en móviles:</h4>
                 <ul>
-                    <li>Abre la cámara de tu celular</li>
-                    <li>Enfoca el código QR</li>
-                    <li>Toca el enlace que aparece</li>
-                    <li>El simulador se abrirá en tu navegador</li>
+                    <li>📷 Abre la cámara de tu celular</li>
+                    <li>🔍 Enfoca el código QR</li>
+                    <li>👆 Toca el enlace que aparece</li>
+                    <li>🌐 El simulador se abrirá automáticamente</li>
                 </ul>
             </div>
             
@@ -712,8 +842,7 @@
                 totalMemoryUsed: 0,
                 totalFragmentation: 0,
                 measurements: 0
-            },
-            qrGenerated: false
+            }
         };
 
         // Inicialización
@@ -736,16 +865,6 @@
             document.getElementById('btnReset').addEventListener('click', resetSimulation);
             document.getElementById('btnStressTest').addEventListener('click', runStressTest);
             document.getElementById('btnConfig').addEventListener('click', showConfigMessage);
-             // === AGREGAR ESTA LÍNEA NUEVA ===
-    document.getElementById('btnQR').addEventListener('click', openQRModal);
-    // ================================
-    
-    // Cerrar modal al hacer clic fuera
-    document.getElementById('qrModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeQRModal();
-        }
-    });
             
             // Botón QR
             document.getElementById('btnQR').addEventListener('click', openQRModal);
@@ -774,81 +893,9 @@
             });
         }
 
-        // Funciones para el QR - VERSIÓN CORREGIDA
-               // Funciones para el QR - VERSIÓN COMPATIBLE CON GITHUB PAGES
-        function generateQRCode() {
-            const currentUrl = 'https://brendabedoya102-byte.github.io/7p-n-2-Sistemas-Operativos/';
-            const qrCanvas = document.getElementById('qrCode');
-            const placeholder = document.getElementById('qrPlaceholder');
-            
-            // Mostrar placeholder mientras se genera
-            qrCanvas.style.display = 'none';
-            placeholder.style.display = 'block';
-            
-            // Configuración simple y compatible
-            const qrOptions = {
-                width: 200,
-                height: 200,
-                margin: 2,
-                colorDark: "#000000",
-                colorLight: "#FFFFFF",
-                correctLevel: QRCode.CorrectLevel.L // Nivel más bajo, más compatible
-            };
-            
-            try {
-                // Limpiar canvas primero
-                const ctx = qrCanvas.getContext('2d');
-                ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-                
-                QRCode.toCanvas(qrCanvas, currentUrl, qrOptions, function(error) {
-                    if (error) {
-                        console.error('Error generando QR:', error);
-                        showQRFallback(currentUrl);
-                        return;
-                    }
-                    
-                    // Éxito - mostrar QR
-                    qrCanvas.style.display = 'block';
-                    placeholder.style.display = 'none';
-                    state.qrGenerated = true;
-                });
-            } catch (error) {
-                console.error('Error en generación QR:', error);
-                showQRFallback(currentUrl);
-            }
-        }
-
-        function showQRFallback(url) {
-            const qrCanvas = document.getElementById('qrCode');
-            const placeholder = document.getElementById('qrPlaceholder');
-            const ctx = qrCanvas.getContext('2d');
-            
-            // Dibujar un QR de fallback manual
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, 200, 200);
-            
-            ctx.fillStyle = '#000000';
-            ctx.font = '14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('🔗 Enlace Directo:', 100, 80);
-            ctx.font = '10px Arial';
-            ctx.fillText('Usa este enlace en', 100, 100);
-            ctx.fillText('tu dispositivo móvil:', 100, 115);
-            ctx.font = '9px Courier New';
-            ctx.fillText(url, 100, 140);
-            
-            qrCanvas.style.display = 'block';
-            placeholder.style.display = 'none';
-        }
-
+        // Funciones para el QR
         function openQRModal() {
             document.getElementById('qrModal').classList.add('active');
-            
-            // Generar QR solo cuando se abre el modal
-            setTimeout(() => {
-                generateQRCode();
-            }, 300); // Pequeño delay para mejor compatibilidad
-            
             addLog('Código QR generado para acceso móvil', 'info');
         }
 
@@ -1391,8 +1438,8 @@
         }
     </script>
 </body>
-
 </html>
+
 
 
 
