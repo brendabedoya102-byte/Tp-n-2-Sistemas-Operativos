@@ -31,8 +31,7 @@
             background: linear-gradient(135deg, var(--bg-primary) 0%, #121218 100%);
             color: var(--text-primary);
             line-height: 1.6;
-            overflow: hidden;
-            height: 100vh;
+            min-height: 100vh;
             padding: 16px;
         }
         
@@ -41,8 +40,105 @@
             grid-template-columns: 1fr 1fr;
             grid-template-rows: auto 1fr;
             gap: 20px;
-            height: 100%;
             max-height: 100vh;
+        }
+        
+        /* Estilos para móviles */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                gap: 16px;
+            }
+            
+            body {
+                padding: 12px;
+                overflow-y: auto;
+                height: auto;
+            }
+            
+            header {
+                flex-direction: column;
+                gap: 16px;
+                padding: 16px;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+            
+            button {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+            
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .process-queues {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .metrics {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .tab-container {
+                margin-top: 12px;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+            }
+            
+            .tab {
+                flex: 1;
+                min-width: 120px;
+                text-align: center;
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+            
+            .memory-viz {
+                height: 100px;
+            }
+            
+            .card-content {
+                padding: 16px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+                text-align: center;
+            }
+            
+            .queue {
+                min-height: auto;
+            }
+            
+            .queue-title {
+                cursor: pointer;
+                user-select: none;
+            }
+            
+            .queue-content {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+            
+            .queue-content.expanded {
+                max-height: 300px;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .queue-content {
+                display: block !important;
+            }
         }
         
         header {
@@ -702,32 +798,32 @@
             <div class="card-content">
                 <div class="process-queues">
                     <div class="queue">
-                        <div class="queue-title">
+                        <div class="queue-title" data-queue="new">
                             <span class="status-indicator" style="background: var(--warning);"></span>
                             Nuevos
                         </div>
-                        <div id="queueNew"></div>
+                        <div class="queue-content" id="queueNew"></div>
                     </div>
                     <div class="queue">
-                        <div class="queue-title">
+                        <div class="queue-title" data-queue="ready">
                             <span class="status-indicator" style="background: var(--success);"></span>
                             Listos
                         </div>
-                        <div id="queueReady"></div>
+                        <div class="queue-content" id="queueReady"></div>
                     </div>
                     <div class="queue">
-                        <div class="queue-title">
+                        <div class="queue-title" data-queue="running">
                             <span class="status-indicator" style="background: var(--accent-primary);"></span>
                             Ejecutando
                         </div>
-                        <div id="queueRunning"></div>
+                        <div class="queue-content" id="queueRunning"></div>
                     </div>
                     <div class="queue">
-                        <div class="queue-title">
+                        <div class="queue-title" data-queue="terminated">
                             <span class="status-indicator" style="background: var(--bg-tertiary);"></span>
                             Terminados
                         </div>
-                        <div id="queueTerminated"></div>
+                        <div class="queue-content" id="queueTerminated"></div>
                     </div>
                 </div>
                 
@@ -793,46 +889,32 @@
         </div>
     </div>
 
-    <!-- Modal QR ESTÁTICO -->
+    <!-- Modal QR -->
     <div class="modal-overlay" id="qrModal">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title">📱 Acceso para Estudiantes</div>
-                <div class="modal-subtitle">Escanea este código QR para descargar el simulador</div>
+                <div class="modal-title">📱 Acceso Móvil</div>
+                <div class="modal-subtitle">Escanea el código QR para acceder al simulador desde tu celular</div>
             </div>
             
             <div class="qr-container">
-                <!-- REEMPLAZA "qr-simulador.png" con el nombre de tu archivo QR -->
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://raw.githubusercontent.com/brendabedoya102-byte/7p-n-2-Sistemas-Operativos/main/index.html" 
-                     alt="QR Code para descargar simulador" 
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://brendabedoya102-byte.github.io/7p-n-2-Sistemas-Operativos/" 
+                     alt="QR Code" 
                      style="width: 200px; height: 200px;">
             </div>
             
             <div class="mobile-info">
-                <h4>📋 Instrucciones para Estudiantes:</h4>
+                <h4>📋 Para usar en móviles:</h4>
                 <ul>
-                    <li><strong>1. Escanea</strong> el código QR con tu celular</li>
-                    <li><strong>2. Toca "Download"</strong> o "Descargar"</li>
-                    <li><strong>3. Guarda el archivo</strong> en tu celular</li>
-                    <li><strong>4. Ábrelo</strong> con tu navegador (Chrome, Safari, etc.)</li>
-                    <li><strong>5. ¡Listo!</strong> El simulador funcionará sin internet</li>
+                    <li>📷 Abre la cámara de tu celular</li>
+                    <li>🔍 Enfoca el código QR</li>
+                    <li>👆 Toca el enlace que aparece</li>
+                    <li>🌐 El simulador se abrirá automáticamente</li>
                 </ul>
-            </div>
-
-            <div style="background: var(--success); color: white; padding: 12px; border-radius: 8px; margin: 10px 0; font-size: 14px;">
-                ✅ <strong>Funciona 100%</strong> - Solo escanear y descargar
             </div>
             
             <div class="modal-footer">
-                <button class="btn-qr" onclick="window.open('https://raw.githubusercontent.com/brendabedoya102-byte/7p-n-2-Sistemas-Operativos/main/index.html', '_blank')">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Descargar Ahora
-                </button>
-                <button class="btn-qr" id="closeQR" style="margin-left: 10px;">
+                <button class="btn-qr" id="closeQR">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -864,7 +946,23 @@
             initializeSystem();
             setupEventListeners();
             addLog('Sistema inicializado correctamente', 'success');
+            
+            // Configurar colapsado de colas en móviles
+            setupMobileQueues();
         });
+
+        function setupMobileQueues() {
+            // Solo en dispositivos móviles
+            if (window.innerWidth <= 768) {
+                document.querySelectorAll('.queue-title').forEach(title => {
+                    title.addEventListener('click', function() {
+                        const queueType = this.getAttribute('data-queue');
+                        const content = document.getElementById(`queue${queueType.charAt(0).toUpperCase() + queueType.slice(1)}`);
+                        content.classList.toggle('expanded');
+                    });
+                });
+            }
+        }
 
         function setupEventListeners() {
             // Botones de control
@@ -910,7 +1008,7 @@
         // Funciones para el QR
         function openQRModal() {
             document.getElementById('qrModal').classList.add('active');
-            addLog('Código QR mostrado - Los estudiantes pueden escanear para descargar', 'info');
+            addLog('Código QR generado para acceso móvil', 'info');
         }
 
         function closeQRModal() {
@@ -1453,11 +1551,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
