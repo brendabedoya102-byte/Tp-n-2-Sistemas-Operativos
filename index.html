@@ -793,36 +793,62 @@
         </div>
     </div>
 
-    <!-- Modal QR -->
+    <!-- Modal QR MEJORADO -->
     <div class="modal-overlay" id="qrModal">
         <div class="modal">
             <div class="modal-header">
                 <div class="modal-title">📱 Acceso Móvil</div>
-                <div class="modal-subtitle">Escanea el código QR para acceder al simulador desde tu celular</div>
+                <div class="modal-subtitle">El simulador funciona 100% en esta página</div>
             </div>
             
-            <div class="qr-container">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://brendabedoya102-byte.github.io/7p-n-2-Sistemas-Operativos/" 
-                     alt="QR Code" 
-                     style="width: 200px; height: 200px;">
+            <div class="qr-container" style="flex-direction: column; gap: 15px;">
+                <div style="text-align: center;">
+                    <div style="margin-bottom: 10px; font-weight: bold; color: var(--accent-primary);">✅ SIMULADOR FUNCIONAL</div>
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; border: 2px solid var(--success);">
+                        <div style="font-size: 14px; margin-bottom: 10px;">🎯 <strong>Este archivo YA ES el simulador completo</strong></div>
+                        <div style="font-size: 12px; color: #2d5016;">
+                            No necesitas escanear nada - ¡Ya estás usando el simulador!
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 10px;">
+                    <div style="font-weight: bold; margin-bottom: 10px;">📲 Para usar en otro dispositivo:</div>
+                    <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; font-family: monospace; font-size: 11px; word-break: break-all; border: 1px solid var(--border);">
+                        https://raw.githubusercontent.com/brendabedoya102-byte/7p-n-2-Sistemas-Operativos/main/index.html
+                    </div>
+                    <div style="font-size: 12px; margin-top: 8px; color: var(--text-secondary);">
+                        1. Copia este enlace<br>
+                        2. Ábrelo en tu celular<br>
+                        3. Haz clic en "Raw"<br>
+                        4. Copia todo el código<br>
+                        5. Pégalo en un archivo .html
+                    </div>
+                </div>
             </div>
             
             <div class="mobile-info">
-                <h4>📋 Para usar en móviles:</h4>
+                <h4>💡 Información importante:</h4>
                 <ul>
-                    <li>📷 Abre la cámara de tu celular</li>
-                    <li>🔍 Enfoca el código QR</li>
-                    <li>👆 Toca el enlace que aparece</li>
-                    <li>🌐 El simulador se abrirá automáticamente</li>
+                    <li>Este archivo HTML <strong>YA CONTIENE</strong> el simulador completo</li>
+                    <li>Para compartir: Envía este mismo archivo por WhatsApp/Email</li>
+                    <li>En el celular: Guarda el archivo y ábrelo con el navegador</li>
+                    <li>¡No necesita internet para funcionar!</li>
                 </ul>
             </div>
             
             <div class="modal-footer">
-                <button class="btn-qr" id="closeQR">
+                <button class="btn-qr" onclick="window.open('https://github.com/brendabedoya102-byte/7p-n-2-Sistemas-Operativos', '_blank')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                    </svg>
+                    Ver Repositorio
+                </button>
+                <button class="btn-qr" id="closeQR" style="margin-left: 10px;">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M6 18L18 6M6 6l12 12"/>
                     </svg>
-                    Cerrar
+                    Entendido
                 </button>
             </div>
         </div>
@@ -896,7 +922,7 @@
         // Funciones para el QR
         function openQRModal() {
             document.getElementById('qrModal').classList.add('active');
-            addLog('Código QR generado para acceso móvil', 'info');
+            addLog('Información de acceso móvil mostrada', 'info');
         }
 
         function closeQRModal() {
@@ -1439,6 +1465,7 @@
     </script>
 </body>
 </html>
+
 
 
 
