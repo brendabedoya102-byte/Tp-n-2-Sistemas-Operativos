@@ -736,6 +736,16 @@
             document.getElementById('btnReset').addEventListener('click', resetSimulation);
             document.getElementById('btnStressTest').addEventListener('click', runStressTest);
             document.getElementById('btnConfig').addEventListener('click', showConfigMessage);
+             // === AGREGAR ESTA LÍNEA NUEVA ===
+    document.getElementById('btnQR').addEventListener('click', openQRModal);
+    // ================================
+    
+    // Cerrar modal al hacer clic fuera
+    document.getElementById('qrModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeQRModal();
+        }
+    });
             
             // Botón QR
             document.getElementById('btnQR').addEventListener('click', openQRModal);
@@ -1383,6 +1393,7 @@
 </body>
 
 </html>
+
 
 
 
