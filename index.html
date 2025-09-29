@@ -899,8 +899,9 @@
         }
 
         // Funciones para el QR - VERSIÓN CORREGIDA
+               // Funciones para el QR - VERSIÓN COMPATIBLE CON GITHUB PAGES
         function generateQRCode() {
-          const currentUrl = 'https://brendabedoya102-byte.github.io/7p-n-2-Sistemas-Operativos/';
+            const currentUrl = 'https://brendabedoya102-byte.github.io/7p-n-2-Sistemas-Operativos/';
             const qrCanvas = document.getElementById('qrCode');
             const placeholder = document.getElementById('qrPlaceholder');
             
@@ -908,25 +909,25 @@
             qrCanvas.style.display = 'none';
             placeholder.style.display = 'block';
             
-            // Limpiar canvas primero
-            const ctx = qrCanvas.getContext('2d');
-            ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
-            
-            // Configuración robusta del QR
+            // Configuración simple y compatible
             const qrOptions = {
                 width: 200,
                 height: 200,
                 margin: 2,
                 colorDark: "#000000",
                 colorLight: "#FFFFFF",
-                correctLevel: QRCode.CorrectLevel.H
+                correctLevel: QRCode.CorrectLevel.L // Nivel más bajo, más compatible
             };
             
             try {
+                // Limpiar canvas primero
+                const ctx = qrCanvas.getContext('2d');
+                ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+                
                 QRCode.toCanvas(qrCanvas, currentUrl, qrOptions, function(error) {
                     if (error) {
                         console.error('Error generando QR:', error);
-                        showQRFallback();
+                        showQRFallback(currentUrl);
                         return;
                     }
                     
@@ -934,15 +935,14 @@
                     qrCanvas.style.display = 'block';
                     placeholder.style.display = 'none';
                     state.qrGenerated = true;
-                    console.log('QR generado exitosamente');
                 });
             } catch (error) {
                 console.error('Error en generación QR:', error);
-                showQRFallback();
+                showQRFallback(currentUrl);
             }
         }
 
-        function showQRFallback() {
+        function showQRFallback(url) {
             const qrCanvas = document.getElementById('qrCode');
             const placeholder = document.getElementById('qrPlaceholder');
             const ctx = qrCanvas.getContext('2d');
@@ -952,12 +952,14 @@
             ctx.fillRect(0, 0, 200, 200);
             
             ctx.fillStyle = '#000000';
-            ctx.font = '12px Arial';
+            ctx.font = '14px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('QR No Disponible', 100, 100);
+            ctx.fillText('🔗 Enlace Directo:', 100, 80);
             ctx.font = '10px Arial';
-            ctx.fillText('Usa el enlace directo:', 100, 120);
-            ctx.fillText(window.location.href, 100, 135);
+            ctx.fillText('Usa este enlace en', 100, 100);
+            ctx.fillText('tu dispositivo móvil:', 100, 115);
+            ctx.font = '9px Courier New';
+            ctx.fillText(url, 100, 140);
             
             qrCanvas.style.display = 'block';
             placeholder.style.display = 'none';
@@ -967,11 +969,9 @@
             document.getElementById('qrModal').classList.add('active');
             
             // Generar QR solo cuando se abre el modal
-            if (!state.qrGenerated) {
-                setTimeout(() => {
-                    generateQRCode();
-                }, 100);
-            }
+            setTimeout(() => {
+                generateQRCode();
+            }, 300); // Pequeño delay para mejor compatibilidad
             
             addLog('Código QR generado para acceso móvil', 'info');
         }
@@ -1517,4 +1517,5 @@
 </body>
 
 </html>
+
 
