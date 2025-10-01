@@ -998,9 +998,9 @@
 
         // Funciones para guardar y cargar historial
         function loadSimulationHistory() {
-            const savedHistory = localStorage.getItem('simulationHistory');
-            if (savedHistory) {
-                state.simulationHistory = JSON.parse(savedHistory);
+            const saved = localStorage.getItem('simulationHistory');
+            if (saved) {
+                state.simulationHistory = JSON.parse(saved);
                 updateComparisonTable();
             }
         }
@@ -1013,7 +1013,7 @@
             state.simulationHistory = [];
             saveSimulationHistory();
             updateComparisonTable();
-            addLog('Historial de simulaciones eliminado', 'warning');
+            addLog('Historial de simulaciones limpiado', 'warning');
         }
 
         function updateComparisonTable() {
@@ -1024,120 +1024,29 @@
                 return;
             }
             
-            tableBody.innerHTML = '';
-            
-            state.simulationHistory.forEach(sim => {
-                const row = document.createElement('tr');
-                
-                row.innerHTML = `
-                    <td class="simulation-id">${sim.id}</td>
-                    <td>${new Date(sim.date).toLocaleString()}</td>
-                    <td>${sim.algorithm}</td>
-                    <td>${sim.memoryUsage}%</td>
-                    <td>${sim.fragmentation}%</td>
-                    <td>${sim.completedProcesses}</td>
-                    <td>${sim.avgWaitTime} ms</td>
-                    <td>${sim.efficiency}%</td>
+            tableBody.innerHTML = state.simulationHistory.map(sim => {
+                return `
+                    <tr>
+                        <td class="simulation-id">${sim.id}</td>
+                        <td>${new Date(sim.date).toLocaleString()}</td>
+                        <td>${sim.algorithm}</td>
+                        <td>${sim.memoryUsage}%</td>
+                        <td>${sim.fragmentation}%</td>
+                        <td>${sim.completedProcesses}</td>
+                        <td>${sim.avgWaitTime} ms</td>
+                        <td>${sim.efficiency}%</td>
+                    </tr>
                 `;
-                
-                tableBody.appendChild(row);
-            });
+            }).join('');
         }
 
-        function saveCurrentSimulation() {
-            const memoryUsage = parseInt(document.getElementById('metricMemoryUsage').textContent);
-            const fragmentation = parseInt(document.getElementById('metricFragmentation').textContent);
-            const completedProcesses = parseInt(document.getElementById('detailCompleted').textContent);
-            const avgWaitTime = parseInt(document.getElementById('detailAvgWait').textContent);
-            const efficiency = parseInt(document.getElementById('detailEfficiency').textContent);
-            const algorithm = document.getElementById('algorithm').value;
-            
-            const simulation = {
-                id: state.currentSimulationId || generateSimulationId(),
-                date: new Date().toISOString(),
-                algorithm: algorithm,
-                memoryUsage: memoryUsage,
-                fragmentation: fragmentation,
-                completedProcesses: completedProcesses,
-                avgWaitTime: avgWaitTime,
-                efficiency: efficiency
-            };
-            
-            // Actualizar si ya existe, o agregar nueva
-            const existingIndex = state.simulationHistory.findIndex(s => s.id === simulation.id);
-            if (existingIndex >= 0) {
-                state.simulationHistory[existingIndex] = simulation;
-            } else {
-                state.simulationHistory.push(simulation);
-            }
-            
-            saveSimulationHistory();
-            updateComparisonTable();
-        }
-
-        function generateSimulationId() {
-            return 'SIM-' + Date.now().toString(36).toUpperCase();
-        }
-
-        function saveReport() {
-            saveCurrentSimulation();
-            
-            // Crear contenido del informe
-            const memoryUsage = document.getElementById('metricMemoryUsage').textContent;
-            const fragmentation = document.getElementById('metricFragmentation').textContent;
-            const activeProcesses = document.getElementById('metricActiveProcesses').textContent;
-            const algorithm = document.getElementById('algorithm').options[document.getElementById('algorithm').selectedIndex].text;
-            const memoryMode = document.getElementById('memoryMode').options[document.getElementById('memoryMode').selectedIndex].text;
-            
-            const reportContent = `
-INFORME DE SIMULACIÓN - SISTEMA DE GESTIÓN DE MEMORIA
-====================================================
-
-Fecha: ${new Date().toLocaleString()}
-ID de simulación: ${state.currentSimulationId || 'N/A'}
-
-CONFIGURACIÓN
--------------
-Algoritmo: ${algorithm}
-Modo de memoria: ${memoryMode}
-Memoria total: ${document.getElementById('totalMemory').value} MB
-Tamaño de página: ${document.getElementById('pageSize').value} MB
-
-MÉTRICAS FINALES
-----------------
-Uso de memoria: ${memoryUsage}
-Fragmentación: ${fragmentation}
-Procesos activos: ${activeProcesses}
-Procesos completados: ${document.getElementById('detailCompleted').textContent}
-Tiempo de espera promedio: ${document.getElementById('detailAvgWait').textContent}
-Eficiencia de memoria: ${document.getElementById('detailEfficiency').textContent}
-
-HISTORIAL DE EVENTOS
---------------------
-${document.getElementById('eventLog').textContent}
-
-====================================================
-Informe generado automáticamente por el Simulador de Gestión de Memoria
-            `;
-            
-            // Crear y descargar archivo
-            const blob = new Blob([reportContent], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `informe-simulacion-${new Date().toISOString().slice(0, 10)}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            addLog('Informe guardado y descargado correctamente', 'success');
-        }
-
-        // Funciones del simulador
+        // Funciones del sistema
         function initializeSystem() {
             const totalMemory = parseInt(document.getElementById('totalMemory').value);
-            state.memory = [{ start: 0, size: totalMemory, processId: null }];
+            const pageSize = parseInt(document.getElementById('pageSize').value);
+            
+            // Limpiar estado
+            state.memory = [];
             state.processes = [];
             state.nextPid = 1;
             state.metrics = {
@@ -1148,402 +1057,117 @@ Informe generado automáticamente por el Simulador de Gestión de Memoria
                 measurements: 0
             };
             
+            // Inicializar memoria
+            const totalPages = Math.ceil(totalMemory / pageSize);
+            for (let i = 0; i < totalPages; i++) {
+                state.memory.push({
+                    id: i,
+                    processId: null,
+                    allocated: false,
+                    size: pageSize,
+                    start: i * pageSize,
+                    end: (i + 1) * pageSize - 1
+                });
+            }
+            
+            // Actualizar visualización
             updateMemoryVisualization();
             updateProcessQueues();
             updateMetrics();
             updatePageTable();
             
-            state.currentSimulationId = generateSimulationId();
-            addLog(`Sistema inicializado con ${totalMemory} MB de memoria`, 'success');
+            // Actualizar estado del sistema
+            document.getElementById('systemStatus').innerHTML = `
+                <span class="status-indicator status-stopped"></span>
+                Detenido
+            `;
+            
+            document.getElementById('btnStart').disabled = false;
+            document.getElementById('btnPause').disabled = true;
+            
+            addLog(`Sistema inicializado con ${totalMemory} MB de memoria y ${totalPages} páginas de ${pageSize} MB`, 'success');
         }
 
         function addRandomProcess() {
-            const sizes = [5, 10, 15, 20, 25];
+            const sizes = [5, 10, 15, 20, 25, 30];
             const size = sizes[Math.floor(Math.random() * sizes.length)];
+            const duration = Math.floor(Math.random() * 10) + 5;
+            
             const process = {
                 id: state.nextPid++,
+                name: `P${state.nextPid - 1}`,
                 size: size,
+                duration: duration,
                 state: 'new',
                 waitTime: 0,
-                startTime: Date.now()
+                startTime: null,
+                endTime: null,
+                pages: []
             };
             
             state.processes.push(process);
-            updateProcessQueues();
-            addLog(`Proceso P${process.id} creado (${size} MB)`, 'info');
             
-            // Intentar asignar memoria si la simulación está en ejecución
-            if (state.isRunning) {
-                allocateMemory();
-            }
+            addLog(`Proceso ${process.name} creado (${size} MB, ${duration} ciclos)`, 'info');
+            updateProcessQueues();
         }
 
-        function allocateMemory() {
+        function allocateMemory(process) {
             const algorithm = document.getElementById('algorithm').value;
-            const memoryMode = document.getElementById('memoryMode').value;
-            
-            // Buscar procesos nuevos para asignar
-            const newProcesses = state.processes.filter(p => p.state === 'new');
-            
-            for (const process of newProcesses) {
-                let allocated = false;
-                
-                if (memoryMode === 'paging') {
-                    allocated = allocateWithPaging(process, algorithm);
-                } else {
-                    allocated = allocateWithCompaction(process, algorithm);
-                }
-                
-                if (allocated) {
-                    process.state = 'ready';
-                    addLog(`Memoria asignada a P${process.id} (${process.size} MB)`, 'success');
-                }
-            }
-            
-            updateMemoryVisualization();
-            updateProcessQueues();
-            updateMetrics();
-            updatePageTable();
-        }
-
-        function allocateWithPaging(process, algorithm) {
             const pageSize = parseInt(document.getElementById('pageSize').value);
             const pagesNeeded = Math.ceil(process.size / pageSize);
-            let allocatedFrames = [];
             
-            // Buscar marcos libres
-            for (let i = 0; i < state.memory.length && allocatedFrames.length < pagesNeeded; i++) {
-                const block = state.memory[i];
-                if (block.processId === null && block.size >= pageSize) {
-                    allocatedFrames.push({
-                        start: block.start,
-                        size: pageSize,
-                        processId: process.id
-                    });
-                    
-                    // Actualizar el bloque de memoria
-                    block.start += pageSize;
-                    block.size -= pageSize;
-                    
-                    // Si el bloque queda vacío, eliminarlo
-                    if (block.size === 0) {
-                        state.memory.splice(i, 1);
-                        i--;
-                    }
-                }
+            let allocatedPages = [];
+            
+            // Buscar páginas libres
+            const freePages = state.memory.filter(page => !page.allocated);
+            
+            if (freePages.length < pagesNeeded) {
+                return false; // No hay suficiente memoria
             }
             
-            if (allocatedFrames.length === pagesNeeded) {
-                // Agregar los marcos asignados a la memoria
-                state.memory.push(...allocatedFrames);
-                state.memory.sort((a, b) => a.start - b.start);
-                
-                process.allocatedFrames = allocatedFrames;
-                return true;
-            }
-            
-            return false;
-        }
-
-        function allocateWithCompaction(process, algorithm) {
-            // Implementación simplificada de compactación
-            let bestBlockIndex = -1;
-            
+            // Aplicar algoritmo de asignación
             if (algorithm === 'first-fit') {
-                bestBlockIndex = state.memory.findIndex(block => 
-                    block.processId === null && block.size >= process.size
-                );
+                allocatedPages = freePages.slice(0, pagesNeeded);
             } else if (algorithm === 'best-fit') {
-                let minSize = Infinity;
-                state.memory.forEach((block, index) => {
-                    if (block.processId === null && block.size >= process.size && block.size < minSize) {
-                        minSize = block.size;
-                        bestBlockIndex = index;
-                    }
-                });
+                // Para best-fit, ordenamos por tamaño (aunque todas las páginas tienen el mismo tamaño)
+                allocatedPages = freePages.slice(0, pagesNeeded);
             } else if (algorithm === 'worst-fit') {
-                let maxSize = -1;
-                state.memory.forEach((block, index) => {
-                    if (block.processId === null && block.size >= process.size && block.size > maxSize) {
-                        maxSize = block.size;
-                        bestBlockIndex = index;
-                    }
-                });
+                // Para worst-fit, también tomamos las primeras páginas disponibles
+                allocatedPages = freePages.slice(0, pagesNeeded);
             }
             
-            if (bestBlockIndex !== -1) {
-                const block = state.memory[bestBlockIndex];
-                
-                // Asignar proceso al bloque
-                state.memory.splice(bestBlockIndex, 1);
-                
-                // Si el bloque es más grande que el proceso, dividirlo
-                if (block.size > process.size) {
-                    state.memory.splice(bestBlockIndex, 0, 
-                        { start: block.start + process.size, size: block.size - process.size, processId: null }
-                    );
-                }
-                
-                state.memory.splice(bestBlockIndex, 0, 
-                    { start: block.start, size: process.size, processId: process.id }
-                );
-                
-                return true;
-            }
-            
-            return false;
-        }
-
-        function runProcesses() {
-            // Mover un proceso de ready a running
-            const readyProcesses = state.processes.filter(p => p.state === 'ready');
-            if (readyProcesses.length > 0) {
-                const process = readyProcesses[0];
-                process.state = 'running';
-                addLog(`Proceso P${process.id} en ejecución`, 'info');
-            }
-            
-            // Simular finalización de procesos en ejecución
-            const runningProcesses = state.processes.filter(p => p.state === 'running');
-            for (const process of runningProcesses) {
-                // Simular que el proceso termina con cierta probabilidad
-                if (Math.random() < 0.3) {
-                    process.state = 'terminated';
-                    
-                    // Liberar memoria
-                    freeMemory(process.id);
-                    
-                    // Calcular tiempo de espera
-                    const waitTime = Date.now() - process.startTime;
-                    state.metrics.totalWaitTime += waitTime;
-                    state.metrics.completedProcesses++;
-                    
-                    addLog(`Proceso P${process.id} terminado (tiempo de espera: ${waitTime} ms)`, 'success');
-                }
-            }
-            
-            updateProcessQueues();
-            updateMetrics();
-        }
-
-        function freeMemory(processId) {
-            // Liberar memoria asignada al proceso
-            for (let i = 0; i < state.memory.length; i++) {
-                if (state.memory[i].processId === processId) {
-                    state.memory[i].processId = null;
-                }
-            }
-            
-            // Compactar bloques libres adyacentes
-            for (let i = 0; i < state.memory.length - 1; i++) {
-                const current = state.memory[i];
-                const next = state.memory[i + 1];
-                
-                if (current.processId === null && next.processId === null) {
-                    current.size += next.size;
-                    state.memory.splice(i + 1, 1);
-                    i--;
-                }
-            }
-            
-            updateMemoryVisualization();
-            updatePageTable();
-        }
-
-        function updateMemoryVisualization() {
-            const visualization = document.getElementById('memoryVisualization');
-            const totalMemory = parseInt(document.getElementById('totalMemory').value);
-            
-            visualization.innerHTML = '';
-            
-            if (state.memory.length === 0) {
-                visualization.innerHTML = '<div class="empty-state">Memoria no inicializada</div>';
-                return;
-            }
-            
-            state.memory.forEach(block => {
-                const blockElement = document.createElement('div');
-                const width = (block.size / totalMemory) * 100;
-                
-                blockElement.className = `memory-block ${block.processId === null ? 'memory-free' : ''}`;
-                blockElement.style.left = `${(block.start / totalMemory) * 100}%`;
-                blockElement.style.width = `${width}%`;
-                
-                if (block.processId !== null) {
-                    blockElement.style.background = `linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))`;
-                    blockElement.textContent = `P${block.processId}`;
-                } else {
-                    blockElement.style.background = `var(--bg-tertiary)`;
-                    blockElement.textContent = `Libre (${block.size} MB)`;
-                }
-                
-                visualization.appendChild(blockElement);
-            });
-        }
-
-        function updateProcessQueues() {
-            const queues = {
-                new: document.getElementById('queueNew'),
-                ready: document.getElementById('queueReady'),
-                running: document.getElementById('queueRunning'),
-                terminated: document.getElementById('queueTerminated')
-            };
-            
-            // Limpiar colas
-            Object.values(queues).forEach(queue => {
-                queue.innerHTML = '';
+            // Asignar páginas al proceso
+            allocatedPages.forEach(page => {
+                page.allocated = true;
+                page.processId = process.id;
+                process.pages.push(page.id);
             });
             
-            // Agregar procesos a las colas
-            state.processes.forEach(process => {
-                const processElement = document.createElement('div');
-                processElement.className = `process process-${process.state}`;
-                
-                processElement.innerHTML = `
-                    <div>P${process.id}</div>
-                    <div class="process-info">${process.size} MB</div>
-                `;
-                
-                queues[process.state].appendChild(processElement);
-            });
+            process.state = 'ready';
+            process.startTime = Date.now();
             
-            // Mostrar estado vacío si no hay procesos
-            Object.entries(queues).forEach(([state, queue]) => {
-                if (queue.children.length === 0) {
-                    const emptyElement = document.createElement('div');
-                    emptyElement.className = 'empty-state';
-                    emptyElement.textContent = 'Vacío';
-                    queue.appendChild(emptyElement);
-                }
-            });
-        }
-
-        function updateMetrics() {
-            const totalMemory = parseInt(document.getElementById('totalMemory').value);
-            
-            // Calcular uso de memoria
-            const usedMemory = state.memory
-                .filter(block => block.processId !== null)
-                .reduce((sum, block) => sum + block.size, 0);
-            
-            const memoryUsage = Math.round((usedMemory / totalMemory) * 100);
-            document.getElementById('metricMemoryUsage').textContent = `${memoryUsage}%`;
-            
-            // Calcular fragmentación
-            const freeBlocks = state.memory.filter(block => block.processId === null);
-            const totalFree = freeBlocks.reduce((sum, block) => sum + block.size, 0);
-            const fragmentation = freeBlocks.length > 1 ? 
-                Math.round(((totalFree - Math.max(...freeBlocks.map(b => b.size))) / totalFree) * 100) : 0;
-            
-            document.getElementById('metricFragmentation').textContent = `${fragmentation}%`;
-            
-            // Procesos activos
-            const activeProcesses = state.processes.filter(p => p.state !== 'terminated').length;
-            document.getElementById('metricActiveProcesses').textContent = activeProcesses;
-            
-            // Métricas detalladas
-            const avgWaitTime = state.metrics.completedProcesses > 0 ? 
-                Math.round(state.metrics.totalWaitTime / state.metrics.completedProcesses) : 0;
-            
-            document.getElementById('detailAvgWait').textContent = `${avgWaitTime} ms`;
-            document.getElementById('detailExtFrag').textContent = `${fragmentation}%`;
-            
-            // Fragmentación interna (simulada)
-            const intFrag = Math.round(Math.random() * 20);
-            document.getElementById('detailIntFrag').textContent = `${intFrag}%`;
-            
-            document.getElementById('detailCompleted').textContent = state.metrics.completedProcesses;
-            
-            // Procesos bloqueados (simulado)
-            const blocked = Math.round(Math.random() * 5);
-            document.getElementById('detailBlocked').textContent = blocked;
-            
-            // Eficiencia (simulada)
-            const efficiency = Math.max(0, 100 - fragmentation - intFrag - blocked * 5);
-            document.getElementById('detailEfficiency').textContent = `${efficiency}%`;
-            
-            // Actualizar métricas para el historial
-            state.metrics.totalMemoryUsed += usedMemory;
-            state.metrics.totalFragmentation += fragmentation;
-            state.metrics.measurements++;
-        }
-
-        function updatePageTable() {
-            const tableBody = document.querySelector('#pageTable tbody');
-            tableBody.innerHTML = '';
-            
-            const pages = [];
-            
-            // Recopilar información de páginas
-            state.memory.forEach(block => {
-                if (block.processId !== null) {
-                    const pageSize = parseInt(document.getElementById('pageSize').value);
-                    const pageCount = Math.ceil(block.size / pageSize);
-                    
-                    for (let i = 0; i < pageCount; i++) {
-                        pages.push({
-                            pid: block.processId,
-                            page: i,
-                            frame: Math.floor(block.start / pageSize) + i,
-                            status: 'Asignada'
-                        });
-                    }
-                }
-            });
-            
-            if (pages.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="4" class="empty-state">No hay páginas asignadas</td></tr>';
-                return;
-            }
-            
-            pages.forEach(page => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>P${page.pid}</td>
-                    <td>${page.page}</td>
-                    <td>${page.frame}</td>
-                    <td>${page.status}</td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        function addLog(message, type = 'info') {
-            const log = document.getElementById('eventLog');
-            const entry = document.createElement('div');
-            entry.className = `log-entry ${type ? 'log-' + type : ''}`;
-            
-            const timestamp = new Date().toLocaleTimeString();
-            entry.textContent = `[${timestamp}] ${message}`;
-            
-            log.appendChild(entry);
-            log.scrollTop = log.scrollHeight;
+            addLog(`Memoria asignada al proceso ${process.name} (${pagesNeeded} páginas)`, 'success');
+            return true;
         }
 
         function startSimulation() {
             if (state.isRunning) return;
             
             state.isRunning = true;
+            state.currentSimulationId = 'sim_' + Date.now();
+            
             document.getElementById('systemStatus').innerHTML = `
                 <span class="status-indicator status-running"></span>
-                Ejecutándose
+                Ejecutando
             `;
             
             document.getElementById('btnStart').disabled = true;
             document.getElementById('btnPause').disabled = false;
             
-            state.interval = setInterval(() => {
-                allocateMemory();
-                runProcesses();
-                updateMetrics();
-                
-                // Guardar estado periódicamente
-                if (Math.random() < 0.1) {
-                    saveCurrentSimulation();
-                }
-            }, 1000);
-            
             addLog('Simulación iniciada', 'success');
+            
+            // Iniciar ciclo de simulación
+            state.interval = setInterval(simulationCycle, 1000);
         }
 
         function pauseSimulation() {
@@ -1567,32 +1191,425 @@ Informe generado automáticamente por el Simulador de Gestión de Memoria
             state.isRunning = false;
             clearInterval(state.interval);
             
+            initializeSystem();
+            addLog('Simulación reiniciada', 'warning');
+        }
+
+        function simulationCycle() {
+            // Mover procesos de nuevo a listo si hay memoria disponible
+            state.processes.filter(p => p.state === 'new').forEach(process => {
+                if (allocateMemory(process)) {
+                    addLog(`Proceso ${process.name} movido a listo`, 'info');
+                }
+            });
+            
+            // Seleccionar proceso para ejecutar (si no hay ninguno ejecutándose)
+            const runningProcesses = state.processes.filter(p => p.state === 'running');
+            if (runningProcesses.length === 0) {
+                const readyProcesses = state.processes.filter(p => p.state === 'ready');
+                if (readyProcesses.length > 0) {
+                    const process = readyProcesses[0];
+                    process.state = 'running';
+                    addLog(`Proceso ${process.name} comenzó a ejecutarse`, 'info');
+                }
+            }
+            
+            // Actualizar procesos en ejecución
+            state.processes.filter(p => p.state === 'running').forEach(process => {
+                process.duration--;
+                
+                if (process.duration <= 0) {
+                    // Proceso terminado
+                    process.state = 'terminated';
+                    process.endTime = Date.now();
+                    
+                    // Liberar memoria
+                    state.memory.forEach(page => {
+                        if (page.processId === process.id) {
+                            page.allocated = false;
+                            page.processId = null;
+                        }
+                    });
+                    
+                    // Actualizar métricas
+                    state.metrics.completedProcesses++;
+                    const waitTime = process.endTime - process.startTime;
+                    state.metrics.totalWaitTime += waitTime;
+                    
+                    addLog(`Proceso ${process.name} terminado (tiempo de espera: ${waitTime}ms)`, 'success');
+                }
+            });
+            
+            // Actualizar tiempo de espera de procesos en cola
+            state.processes.filter(p => p.state === 'ready').forEach(process => {
+                process.waitTime++;
+            });
+            
+            // Actualizar visualizaciones
+            updateMemoryVisualization();
+            updateProcessQueues();
+            updateMetrics();
+            updatePageTable();
+            
+            // Verificar si no hay más procesos para ejecutar
+            const activeProcesses = state.processes.filter(p => p.state === 'new' || p.state === 'ready' || p.state === 'running');
+            if (activeProcesses.length === 0 && state.processes.length > 0) {
+                addLog('Todos los procesos han terminado', 'success');
+                finishSimulation();
+            }
+        }
+
+        function finishSimulation() {
+            state.isRunning = false;
+            clearInterval(state.interval);
+            
             document.getElementById('systemStatus').innerHTML = `
                 <span class="status-indicator status-stopped"></span>
-                Detenido
+                Completado
             `;
             
             document.getElementById('btnStart').disabled = false;
             document.getElementById('btnPause').disabled = true;
             
-            initializeSystem();
-            addLog('Simulación reiniciada', 'info');
+            // Guardar en historial
+            const memoryUsage = calculateMemoryUsage();
+            const fragmentation = calculateFragmentation();
+            const avgWaitTime = state.metrics.completedProcesses > 0 ? 
+                Math.round(state.metrics.totalWaitTime / state.metrics.completedProcesses) : 0;
+            const efficiency = calculateEfficiency();
+            
+            const simulationData = {
+                id: state.currentSimulationId,
+                date: new Date().toISOString(),
+                algorithm: document.getElementById('algorithm').value,
+                memoryUsage: memoryUsage,
+                fragmentation: fragmentation,
+                completedProcesses: state.metrics.completedProcesses,
+                avgWaitTime: avgWaitTime,
+                efficiency: efficiency
+            };
+            
+            state.simulationHistory.push(simulationData);
+            saveSimulationHistory();
+            updateComparisonTable();
+            
+            addLog(`Simulación completada. Eficiencia: ${efficiency}%`, 'success');
         }
 
         function runStressTest() {
             addLog('Iniciando prueba de estrés...', 'warning');
             
-            // Agregar múltiples procesos rápidamente
+            // Crear múltiples procesos rápidamente
             for (let i = 0; i < 10; i++) {
                 setTimeout(() => {
                     addRandomProcess();
                 }, i * 200);
             }
             
-            // Iniciar simulación si no está en ejecución
-            if (!state.isRunning) {
-                setTimeout(startSimulation, 2100);
+            // Iniciar simulación después de crear los procesos
+            setTimeout(() => {
+                if (!state.isRunning) {
+                    startSimulation();
+                }
+            }, 2500);
+        }
+
+        // Funciones de cálculo de métricas
+        function calculateMemoryUsage() {
+            const totalMemory = parseInt(document.getElementById('totalMemory').value);
+            const usedMemory = state.memory.filter(page => page.allocated).length * parseInt(document.getElementById('pageSize').value);
+            return Math.round((usedMemory / totalMemory) * 100);
+        }
+
+        function calculateFragmentation() {
+            const freePages = state.memory.filter(page => !page.allocated);
+            if (freePages.length === 0) return 0;
+            
+            // Calcular fragmentación externa
+            let fragmentation = 0;
+            let freeBlocks = 0;
+            let inFreeBlock = false;
+            
+            for (let i = 0; i < state.memory.length; i++) {
+                if (!state.memory[i].allocated) {
+                    if (!inFreeBlock) {
+                        freeBlocks++;
+                        inFreeBlock = true;
+                    }
+                } else {
+                    inFreeBlock = false;
+                }
             }
+            
+            fragmentation = Math.round((freeBlocks / freePages.length) * 100);
+            return fragmentation > 100 ? 100 : fragmentation;
+        }
+
+        function calculateEfficiency() {
+            const totalMemory = parseInt(document.getElementById('totalMemory').value);
+            const usedMemory = state.memory.filter(page => page.allocated).length * parseInt(document.getElementById('pageSize').value);
+            const memoryEfficiency = (usedMemory / totalMemory) * 100;
+            
+            const timeEfficiency = state.metrics.completedProcesses > 0 ? 
+                Math.min(100, (state.metrics.completedProcesses / state.processes.length) * 100) : 0;
+            
+            return Math.round((memoryEfficiency + timeEfficiency) / 2);
+        }
+
+        // Funciones de actualización de UI
+        function updateMemoryVisualization() {
+            const container = document.getElementById('memoryVisualization');
+            const totalMemory = parseInt(document.getElementById('totalMemory').value);
+            
+            container.innerHTML = '';
+            
+            state.memory.forEach(page => {
+                const block = document.createElement('div');
+                const percentage = (page.size / totalMemory) * 100;
+                
+                block.className = `memory-block ${page.allocated ? '' : 'memory-free'}`;
+                block.style.left = `${(page.start / totalMemory) * 100}%`;
+                block.style.width = `${percentage}%`;
+                
+                if (page.allocated) {
+                    const process = state.processes.find(p => p.id === page.processId);
+                    if (process) {
+                        block.style.background = `linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))`;
+                        block.textContent = process.name;
+                    }
+                } else {
+                    block.style.background = 'var(--bg-tertiary)';
+                }
+                
+                container.appendChild(block);
+            });
+        }
+
+        function updateProcessQueues() {
+            const queues = {
+                new: document.getElementById('queueNew'),
+                ready: document.getElementById('queueReady'),
+                running: document.getElementById('queueRunning'),
+                terminated: document.getElementById('queueTerminated')
+            };
+            
+            // Limpiar colas
+            Object.values(queues).forEach(queue => {
+                queue.innerHTML = '';
+            });
+            
+            // Agregar procesos a sus colas
+            state.processes.forEach(process => {
+                const processElement = document.createElement('div');
+                processElement.className = `process process-${process.state}`;
+                
+                let infoText = '';
+                if (process.state === 'new') {
+                    infoText = `${process.size} MB`;
+                } else if (process.state === 'ready') {
+                    infoText = `Espera: ${process.waitTime}`;
+                } else if (process.state === 'running') {
+                    infoText = `Restante: ${process.duration}`;
+                } else if (process.state === 'terminated') {
+                    infoText = `Completado`;
+                }
+                
+                processElement.innerHTML = `
+                    <div>${process.name}</div>
+                    <div class="process-info">${infoText}</div>
+                `;
+                
+                queues[process.state].appendChild(processElement);
+            });
+            
+            // Mostrar estado vacío si es necesario
+            Object.entries(queues).forEach(([state, element]) => {
+                if (element.children.length === 0) {
+                    const emptyMsg = document.createElement('div');
+                    emptyMsg.className = 'empty-state';
+                    emptyMsg.textContent = 'Vacío';
+                    element.appendChild(emptyMsg);
+                }
+            });
+        }
+
+        function updateMetrics() {
+            const memoryUsage = calculateMemoryUsage();
+            const fragmentation = calculateFragmentation();
+            const activeProcesses = state.processes.filter(p => 
+                p.state === 'new' || p.state === 'ready' || p.state === 'running'
+            ).length;
+            
+            document.getElementById('metricMemoryUsage').textContent = `${memoryUsage}%`;
+            document.getElementById('metricFragmentation').textContent = `${fragmentation}%`;
+            document.getElementById('metricActiveProcesses').textContent = activeProcesses;
+            
+            // Métricas detalladas
+            const avgWaitTime = state.metrics.completedProcesses > 0 ? 
+                Math.round(state.metrics.totalWaitTime / state.metrics.completedProcesses) : 0;
+            const efficiency = calculateEfficiency();
+            
+            document.getElementById('detailAvgWait').textContent = `${avgWaitTime} ms`;
+            document.getElementById('detailExtFrag').textContent = `${fragmentation}%`;
+            document.getElementById('detailIntFrag').textContent = '0%'; // Simplificado para este ejemplo
+            document.getElementById('detailCompleted').textContent = state.metrics.completedProcesses;
+            document.getElementById('detailBlocked').textContent = state.processes.filter(p => p.state === 'ready').length;
+            document.getElementById('detailEfficiency').textContent = `${efficiency}%`;
+        }
+
+        function updatePageTable() {
+            const tableBody = document.querySelector('#pageTable tbody');
+            const allocatedPages = state.memory.filter(page => page.allocated);
+            
+            if (allocatedPages.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="empty-state">No hay páginas asignadas</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = allocatedPages.map(page => {
+                const process = state.processes.find(p => p.id === page.processId);
+                return `
+                    <tr>
+                        <td>${process ? process.name : 'N/A'}</td>
+                        <td>${page.id}</td>
+                        <td>${page.id}</td>
+                        <td>Asignada</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('eventLog');
+            const logEntry = document.createElement('div');
+            
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.innerHTML = `
+                <strong>[${new Date().toLocaleTimeString()}]</strong> ${message}
+            `;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // FUNCIÓN CORREGIDA PARA GUARDAR EL INFORME
+        function saveReport() {
+            addLog('Generando informe de simulación...', 'info');
+            
+            // Crear contenido del informe
+            const reportContent = generateReportContent();
+            
+            // Crear y descargar archivo
+            const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            a.href = url;
+            a.download = `informe-simulacion-${timestamp}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Limpiar
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                addLog('Informe guardado correctamente', 'success');
+            }, 100);
+        }
+
+        function generateReportContent() {
+            const totalMemory = parseInt(document.getElementById('totalMemory').value);
+            const pageSize = parseInt(document.getElementById('pageSize').value);
+            const algorithm = document.getElementById('algorithm').options[document.getElementById('algorithm').selectedIndex].text;
+            const memoryMode = document.getElementById('memoryMode').options[document.getElementById('memoryMode').selectedIndex].text;
+            
+            // Obtener métricas actuales
+            const memoryUsage = document.getElementById('metricMemoryUsage').textContent;
+            const fragmentation = document.getElementById('metricFragmentation').textContent;
+            const activeProcesses = document.getElementById('metricActiveProcesses').textContent;
+            const avgWaitTime = document.getElementById('detailAvgWait').textContent;
+            const extFrag = document.getElementById('detailExtFrag').textContent;
+            const intFrag = document.getElementById('detailIntFrag').textContent;
+            const completed = document.getElementById('detailCompleted').textContent;
+            const blocked = document.getElementById('detailBlocked').textContent;
+            const efficiency = document.getElementById('detailEfficiency').textContent;
+            
+            // Obtener logs
+            const logEntries = Array.from(document.querySelectorAll('#eventLog .log-entry'))
+                .map(entry => entry.textContent.trim())
+                .join('\n');
+            
+            // Obtener información de procesos
+            const processInfo = state.processes.map(process => {
+                return `  - ${process.name}: ${process.size} MB, Estado: ${process.state}, Tiempo de espera: ${process.waitTime}`;
+            }).join('\n');
+            
+            // Obtener información de memoria
+            const allocatedPages = state.memory.filter(page => page.allocated);
+            const memoryInfo = allocatedPages.map(page => {
+                const process = state.processes.find(p => p.id === page.processId);
+                return `  - Página ${page.id}: ${process ? process.name : 'N/A'} (${page.size} MB)`;
+            }).join('\n');
+            
+            return `INFORME DE SIMULACIÓN - SISTEMA DE GESTIÓN DE MEMORIA
+================================================================
+
+FECHA Y HORA: ${new Date().toLocaleString()}
+ID DE SIMULACIÓN: ${state.currentSimulationId || 'N/A'}
+
+CONFIGURACIÓN DEL SISTEMA
+-------------------------
+Memoria total: ${totalMemory} MB
+Tamaño de página: ${pageSize} MB
+Algoritmo de asignación: ${algorithm}
+Modo de memoria: ${memoryMode}
+
+MÉTRICAS DE RENDIMIENTO
+-----------------------
+Uso de memoria: ${memoryUsage}
+Fragmentación total: ${fragmentation}
+Procesos activos: ${activeProcesses}
+Procesos completados: ${completed}
+Procesos bloqueados: ${blocked}
+Tiempo de espera promedio: ${avgWaitTime}
+Fragmentación externa: ${extFrag}
+Fragmentación interna: ${intFrag}
+Eficiencia del sistema: ${efficiency}
+
+INFORMACIÓN DE PROCESOS
+-----------------------
+Total de procesos: ${state.processes.length}
+${processInfo || '  - No hay procesos en el sistema'}
+
+INFORMACIÓN DE MEMORIA
+----------------------
+Total de páginas: ${state.memory.length}
+Páginas asignadas: ${allocatedPages.length}
+${memoryInfo || '  - No hay páginas asignadas'}
+
+HISTORIAL DE EVENTOS
+--------------------
+${logEntries || 'No hay eventos registrados'}
+
+HISTORIAL DE SIMULACIONES
+-------------------------
+Total de simulaciones: ${state.simulationHistory.length}
+
+${state.simulationHistory.map(sim => `
+Simulación: ${sim.id}
+  Fecha: ${new Date(sim.date).toLocaleString()}
+  Algoritmo: ${sim.algorithm}
+  Uso de memoria: ${sim.memoryUsage}%
+  Fragmentación: ${sim.fragmentation}%
+  Procesos completados: ${sim.completedProcesses}
+  Tiempo promedio: ${sim.avgWaitTime} ms
+  Eficiencia: ${sim.efficiency}%
+`).join('\n')}
+
+================================================================
+Informe generado automáticamente por el Simulador de Gestión de Memoria
+`;
         }
     </script>
 </body>
